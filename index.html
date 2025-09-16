@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Reality Dashboard v4</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        :root {
+            --dark-bg: #0d0c1d;
+            --primary-purple: #4c3a8e;
+            --light-purple: #7f5af0;
+            --glow-color: rgba(127, 90, 240, 0.6);
+            --text-primary: #ffffff;
+            --text-secondary: #a7a9be;
+            --glass-bg: rgba(26, 26, 46, 0.7);
+            --glass-border: rgba(127, 90, 240, 0.3);
+            --element-glow: rgba(255, 220, 158, 0.3);
+            --element-color: rgba(255, 239, 204, 0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--dark-bg);
+            background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0);
+            background-size: 40px 40px;
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color 1.5s ease;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 25px; }
+
+        .header { text-align: center; margin-bottom: 20px; }
+        .title { font-size: 2.8em; font-weight: 600; background: linear-gradient(45deg, var(--light-purple), var(--text-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px var(--glow-color); transition: all 0.5s ease; }
+        .subtitle { font-size: 1em; font-weight: 300; color: var(--text-secondary); }
+
+        .top-controls { position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 1001; }
+        .top-btn { background: var(--glass-bg); backdrop-filter: blur(10px); color: var(--text-primary); border: 1px solid var(--glass-border); border-radius: 50%; width: 45px; height: 45px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; font-size: 1.2em; }
+        .top-btn:hover { background-color: var(--light-purple); box-shadow: 0 0 15px var(--glow-color); }
+
+        .controls-wrapper { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 30px; }
+        .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .control-btn, .save-load-btn { background: var(--glass-bg); backdrop-filter: blur(5px); color: var(--text-secondary); border: 1px solid var(--glass-border); padding: 8px 18px; border-radius: 25px; font-size: 0.9em; font-weight: 400; cursor: pointer; transition: all 0.3s ease; }
+        .control-btn:hover, .save-load-btn:hover { color: var(--text-primary); background-color: var(--primary-purple); box-shadow: 0 0 15px var(--glow-color); transform: translateY(-2px); }
+        .control-btn.active { color: var(--text-primary); background: var(--light-purple); border-color: var(--light-purple); }
+
+        .command-area { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: all 0.5s ease; }
+        .command-history { max-height: 110px; overflow-y: auto; margin-bottom: 15px; scrollbar-width: thin; scrollbar-color: var(--light-purple) var(--dark-bg); }
+        .history-item { padding: 8px 15px; font-size: 0.9em; cursor: pointer; border-radius: 10px; transition: background-color 0.3s; }
+        .history-item:hover { background-color: var(--primary-purple); }
+
+        .prompt-area { position: relative; }
+        .prompt-input { width: 100%; padding: 12px 50px 12px 20px; font-size: 1em; border: 1px solid var(--glass-border); border-radius: 15px; outline: none; background: var(--dark-bg); color: var(--text-primary); transition: all 0.3s ease; }
+        .prompt-input:focus { border-color: var(--light-purple); box-shadow: 0 0 20px var(--glow-color); }
+        .voice-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--light-purple); color: white; border: none; border-radius: 10px; width: 32px; height: 32px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
+        .voice-btn:hover { transform: translateY(-50%) scale(1.1); }
+        .voice-btn.listening { background: #e94560; animation: pulse 1s infinite; }
+
+        .demo-area { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 10px; margin-bottom: 30px; min-height: 400px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2), inset 0 0 30px rgba(0,0,0,0.3); transition: all 0.5s ease; }
+
+        .element { position: absolute; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5em; cursor: grab; user-select: none; will-change: transform, top, left; transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.5s, opacity 0.5s; background: radial-gradient(circle, var(--element-color) 0%, transparent 60%); box-shadow: 0 0 25px 4px var(--element-glow), inset 0 0 15px var(--element-color); }
+        .element:active { cursor: grabbing; transform: scale(1.1); }
+
+        .suggestions { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .suggestion-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 15px; }
+        .suggestion-card:hover { border-color: var(--light-purple); transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        .suggestion-icon { font-size: 1.8em; }
+        .suggestion-title { font-weight: 600; }
+        .suggestion-desc { font-size: 0.9em; color: var(--text-secondary); }
+
+        /* --- Animations & States --- */
+        @keyframes pulse { 50% { opacity: 0.6; } }
+        .float-effect { animation: float 8s ease-in-out infinite; }
+        @keyframes float { 50% { transform: translateY(-20px); } }
+        .spin-effect { animation: spin 4s linear infinite, float 8s ease-in-out infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .dance-effect { animation: dance 1.6s ease-in-out infinite; }
+        @keyframes dance { 0%, 100% { transform: translateY(0) rotate(-5deg); } 25% { transform: translateY(-15px) rotate(0deg) scale(1.05); } 50% { transform: translateY(0) rotate(5deg); } 75% { transform: translateY(-15px) rotate(0deg) scale(1.05); } }
+        .vanish-effect { transform: scale(0) !important; opacity: 0; }
+        
+        /* Hidden Achievement Panel, etc. */
+        .status, .achievement-notification { display: none; }
+        .achievement-panel { position: fixed; top: 80px; right: 20px; width: 300px; background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 15px; padding: 20px; z-index: 1000; transform: translateX(120%); transition: transform 0.5s ease-in-out; color: var(--text-primary); }
+        .achievement-panel.show { transform: translateX(0); }
+    </style>
+</head>
+<body>
+
+    <div class="top-controls">
+        <button class="top-btn" id="soundToggle" title="Toggle Sound">🔊</button>
+        <button class="top-btn" id="achievementBtn" title="Achievements">🏆</button>
+        <button class="top-btn" id="fullscreenBtn" title="Fullscreen">⛶</button>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <h1 class="title"> WEB MORPH </h1>
+            <p class="subtitle">Voice commands, dynamic themes, achievements, and customization!</p>
+        </header>
+
+        <div class="controls-wrapper">
+            <div class="controls">
+                <button class="control-btn active" data-theme="default">🌈 Default</button>
+                <button class="control-btn" data-theme="dark">🌙 Dark</button>
+                <button class="control-btn" data-theme="space">🚀 Space</button>
+                <button class="control-btn" data-theme="underwater">🌊 Ocean</button>
+                <button class="control-btn" data-theme="sunrise">🌅 Sunrise</button>
+            </div>
+             <div class="controls">
+                 <button class="save-load-btn" id="saveState">💾 Save State</button>
+                 <button class="save-load-btn" id="loadState">📁 Load State</button>
+            </div>
+        </div>
+
+        <div class="command-area">
+            <div class="command-history" id="commandHistory"></div>
+            <div class="prompt-area">
+                <input type="text" class="prompt-input" id="promptInput" placeholder="Try: 'dance', 'anti gravity', 'create a star'...">
+                <button class="voice-btn" id="voiceBtn" title="Voice Command">🎤</button>
+            </div>
+        </div>
+        
+        <div class="demo-area" id="demoArea"></div>
+
+        <div class="suggestions">
+             <div class="suggestion-card" onclick="executeCommand('anti gravity')">
+                <div class="suggestion-icon">⬆️</div>
+                <div><div class="suggestion-title">Anti Gravity</div><div class="suggestion-desc">Make all the planets float to the top.</div></div>
+            </div>
+             <div class="suggestion-card" onclick="executeCommand('dance')">
+                <div class="suggestion-icon">💃</div>
+                <div><div class="suggestion-title">Dance Party</div><div class="suggestion-desc">Make the planets dance to a groovy beat.</div></div>
+            </div>
+             <div class="suggestion-card" onclick="executeCommand('run')">
+                <div class="suggestion-icon">💨</div>
+                <div><div class="suggestion-title">Run</div><div class="suggestion-desc">Cause the planets to zip around frantically.</div></div>
+            </div>
+            <div class="suggestion-card" onclick="executeCommand('time travel')">
+                <div class="suggestion-icon">⏰</div>
+                <div><div class="suggestion-title">Time Travel</div><div class="suggestion-desc">Journey through the different visual themes.</div></div>
+            </div>
+            <div class="suggestion-card" onclick="executeCommand('spin')">
+                <div class="suggestion-icon">💫</div>
+                <div><div class="suggestion-title">Spin</div><div class="suggestion-desc">Make all planets spin continuously.</div></div>
+            </div>
+            <div class="suggestion-card" onclick="executeCommand('reset')">
+                <div class="suggestion-icon">🔄</div>
+                <div><div class="suggestion-title">Reset</div><div class="suggestion-desc">Reset the sandbox to its original state.</div></div>
+            </div>
+        </div>
+        
+        <div class="achievement-panel" id="achievementPanel">
+            <h3>🏆 Achievements</h3>
+            <div id="achievementsList"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dom = {
+                sandbox: document.getElementById('demoArea'),
+                promptInput: document.getElementById('promptInput'),
+                historyContainer: document.getElementById('commandHistory'),
+                achievementPanel: document.getElementById('achievementPanel'),
+                soundToggle: document.getElementById('soundToggle'),
+                fullscreenBtn: document.getElementById('fullscreenBtn'),
+                executeBtn: document.getElementById('voiceBtn').previousElementSibling.nextElementSibling, // A bit fragile, but gets the execute button
+                themeButtons: document.querySelectorAll('.control-btn')
+            };
+
+            let elements = [], physicsInterval = null, musicInterval = null;
+
+            // --- THEME ENGINE ---
+            const themes = {
+                default: {"--dark-bg":"#0d0c1d","--primary-purple":"#4c3a8e","--light-purple":"#7f5af0","--glow-color":"rgba(127, 90, 240, 0.6)","--text-primary":"#ffffff","--text-secondary":"#a7a9be","--glass-bg":"rgba(26, 26, 46, 0.7)","--glass-border":"rgba(127, 90, 240, 0.3)","--element-glow":"rgba(255, 220, 158, 0.3)","--element-color":"rgba(255, 239, 204, 0.4)"},
+                dark: {"--dark-bg":"#1B1B2F","--primary-purple":"#5A5A8A","--light-purple":"#8A8A_BF_","--glow-color":"rgba(138, 138, 191, 0.6)","--text-primary":"#E0E0E0","--text-secondary":"#9E9E9E","--glass-bg":"rgba(40, 40, 60, 0.7)","--glass-border":"rgba(138, 138, 191, 0.3)","--element-glow":"rgba(224, 224, 224, 0.3)","--element-color":"rgba(240, 240, 240, 0.4)"},
+                space: {"--dark-bg":"#000000","--primary-purple":"#3D2C8D","--light-purple":"#916BBF","--glow-color":"rgba(145, 107, 191, 0.6)","--text-primary":"#F5F5F5","--text-secondary":"#C7C8CC","--glass-bg":"rgba(30, 30, 50, 0.7)","--glass-border":"rgba(145, 107, 191, 0.3)","--element-glow":"rgba(240, 230, 255, 0.4)","--element-color":"rgba(245, 245, 255, 0.5)"},
+                underwater: {"--dark-bg":"#0A1931","--primary-purple":"#185ADB","--light-purple":"#009DAE","--glow-color":"rgba(0, 157, 174, 0.6)","--text-primary":"#E8F6EF","--text-secondary":"#C1D6E1","--glass-bg":"rgba(10, 40, 80, 0.7)","--glass-border":"rgba(0, 157, 174, 0.3)","--element-glow":"rgba(119, 221, 221, 0.4)","--element-color":"rgba(150, 240, 240, 0.5)"},
+                sunrise: {"--dark-bg":"#F8C08A","--primary-purple":"#FFAB76","--light-purple":"#FF8474","--glow-color":"rgba(255, 132, 116, 0.6)","--text-primary":"#422040","--text-secondary":"#6A4968","--glass-bg":"rgba(255, 255, 255, 0.5)","--glass-border":"rgba(255, 132, 116, 0.3)","--element-glow":"rgba(255, 200, 150, 0.5)","--element-color":"rgba(255, 230, 200, 0.6)"}
+            };
+            function setTheme(themeName = 'default') {
+                const palette = themes[themeName] || themes.default;
+                for (const [key, value] of Object.entries(palette)) {
+                    document.documentElement.style.setProperty(key, value);
+                }
+                dom.themeButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.theme === themeName);
+                });
+                audioSystem.playMusic(themeName);
+            }
+
+            // --- AUDIO SYSTEM ---
+            class AudioSystem {
+                constructor() { this.audioCtx = null; this.isEnabled = true; }
+                init() { if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+                playNote(freq, type = 'sine', duration = 0.1, vol = 0.5) {
+                    if (!this.audioCtx || !this.isEnabled) return;
+                    const o = this.audioCtx.createOscillator(), g = this.audioCtx.createGain();
+                    o.connect(g); g.connect(this.audioCtx.destination);
+                    o.type = type; o.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+                    g.gain.setValueAtTime(vol, this.audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration);
+                    o.start(); o.stop(this.audioCtx.currentTime + duration);
+                }
+                playSound(sound) {
+                    if (sound === 'execute') this.playNote(880, 'triangle', 0.1, 0.3);
+                    if (sound === 'thud') this.playNote(110, 'square', 0.05, 0.4);
+                    if (sound === 'pop') this.playNote(440, 'sine', 0.05, 0.5);
+                    if (sound === 'vanish') this.playNote(220, 'sawtooth', 0.2, 0.3);
+                }
+                playMusic(theme) {
+                    if (musicInterval) clearInterval(musicInterval);
+                    if (!this.isEnabled) return;
+                    let notes = [], duration = 0, type = 'square', vol = 0.3;
+                    if (theme === 'dance') { notes = [261, 261, 392, 392, 440, 440, 392, 392]; duration = 150; }
+                    if (theme === 'run') { notes = [523, 783, 1046, 783]; duration = 80; }
+                    if (theme === 'anti-gravity') { this.playNote(440, 'sine', 1.5, 0.4); return; }
+                    if (theme === 'underwater') { notes = [130, 164, 196, 164]; duration = 500; type = 'sine'; vol = 0.4; }
+                    if (theme === 'sunrise') { notes = [523, 659, 783, 659]; duration = 300; type = 'triangle'; }
+                    if (notes.length > 0) {
+                        let i = 0; musicInterval = setInterval(() => { this.playNote(notes[i++ % notes.length], type, 0.1, vol); }, duration);
+                    }
+                }
+            }
+            const audioSystem = new AudioSystem();
+
+            // --- CORE COMMAND LOGIC ---
+            window.executeCommand = (command) => {
+                const cleanCommand = (command || dom.promptInput.value).toLowerCase().trim();
+                if (!cleanCommand) return;
+                
+                audioSystem.init(); // Ensure audio is ready on first command
+                resetEffects();
+                audioSystem.playSound('execute');
+                addToHistory(command || dom.promptInput.value);
+                
+                if (cleanCommand.includes('gravity on')) { turnOnGravity(); }
+                else if (cleanCommand.includes('anti gravity') || cleanCommand.includes('zero gravity')) { turnOffGravity(); }
+                else if (cleanCommand.includes('dance')) { activateDanceMode(); }
+                else if (cleanCommand.includes('run')) { activateRunMode(); }
+                else if (cleanCommand.includes('spin')) { elements.forEach(el => el.classList.add('spin-effect')); }
+                else if (cleanCommand.includes('vanish')) { vanishElements(); }
+                else if (cleanCommand.startsWith('create')) { createElement(cleanCommand.split(' ').pop()); }
+                else if (cleanCommand.includes('reset')) { init(); }
+                else { setTheme(cleanCommand.split(' ')[0]); } // Try to set theme
+                
+                dom.promptInput.value = '';
+            }
+
+            function resetEffects() {
+                if (physicsInterval) clearInterval(physicsInterval);
+                if (musicInterval) clearInterval(musicInterval);
+                physicsInterval = musicInterval = null;
+                elements.forEach(el => { el.className = 'element'; el.style.animation = ''; });
+            }
+
+            function addToHistory(command) {
+                const item = document.createElement('div');
+                item.className = 'history-item'; item.textContent = command;
+                item.onclick = () => executeCommand(command);
+                dom.historyContainer.prepend(item);
+                if (dom.historyContainer.children.length > 10) { dom.historyContainer.lastChild.remove(); }
+            }
+            
+            // --- Command Implementations ---
+            function turnOnGravity() { physicsInterval = setInterval(() => applyPhysics(0.5), 20); }
+            function turnOffGravity() { audioSystem.playMusic('anti-gravity'); elements.forEach(el => { el.classList.add('float-effect'); el.vy = -2; }); physicsInterval = setInterval(() => applyPhysics(-0.1), 20); }
+            function activateDanceMode() { elements.forEach(el => el.classList.add('dance-effect')); audioSystem.playMusic('dance'); }
+            function activateRunMode() { audioSystem.playMusic('run'); physicsInterval = setInterval(() => { elements.forEach(el => { const a = Math.random() * 2 * Math.PI; el.vx = Math.cos(a) * 15; el.vy = Math.sin(a) * 15; });}, 200); physicsInterval = setInterval(() => applyPhysics(0), 20);}
+            function vanishElements() { audioSystem.playSound('vanish'); elements.forEach(el => el.classList.add('vanish-effect')); setTimeout(() => { elements.forEach(el => el.remove()); elements = []; }, 500); }
+
+            // --- Element Creation & Physics ---
+            function createElement(emoji = '✨') {
+                const el = document.createElement('div');
+                el.className = 'element'; el.textContent = emoji;
+                dom.sandbox.appendChild(el);
+                const rect = dom.sandbox.getBoundingClientRect();
+                el.style.top = `${Math.random() * (rect.height - 90)}px`;
+                el.style.left = `${Math.random() * (rect.width - 90)}px`;
+                el.vx = Math.random() * 4 - 2; el.vy = 0;
+                elements.push(el);
+                makeDraggable(el);
+                audioSystem.playSound('pop');
+            }
+
+            function applyPhysics(gravity) {
+                const rect = dom.sandbox.getBoundingClientRect();
+                elements.forEach(el => {
+                    if (el.isDragging) return;
+                    let x = parseFloat(el.style.left), y = parseFloat(el.style.top);
+                    el.vy += gravity; el.vx *= 0.99; x += el.vx; y += el.vy;
+                    if (x < 0 || x + el.offsetWidth > rect.width) { el.vx *= -0.8; x = x < 0 ? 0 : rect.width - el.offsetWidth; }
+                    if (y < 0 || y + el.offsetHeight > rect.height) { if (gravity > 0 && el.vy > 1.5) audioSystem.playSound('thud'); el.vy *= -0.8; y = y < 0 ? 0 : rect.height - el.offsetHeight; }
+                    el.style.left = `${x}px`; el.style.top = `${y}px`;
+                });
+            }
+            
+            function makeDraggable(el) {
+                el.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    el.isDragging = true; el.vx = el.vy = 0;
+                    el.style.transition = 'none'; el.style.animation = 'none';
+                    const onMouseMove = e => {
+                        if (!el.isDragging) return;
+                        el.style.left = `${e.clientX - dom.sandbox.getBoundingClientRect().left - el.offsetWidth/2}px`;
+                        el.style.top = `${e.clientY - dom.sandbox.getBoundingClientRect().top - el.offsetHeight/2}px`;
+                    };
+                    const onMouseUp = () => {
+                        el.isDragging = false;
+                        el.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease, background 0.5s, opacity 0.5s';
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                    };
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+            }
+            
+            // --- Initialization ---
+            function init() {
+                resetEffects();
+                dom.sandbox.innerHTML = ''; elements = [];
+                ['🌎', '🪐', '🌟', '🚀', '🌕', '🛰️'].forEach(createElement);
+                setTheme('default');
+                turnOnGravity();
+            }
+
+            // --- Event Listeners ---
+            dom.promptInput.addEventListener('keypress', e => { if (e.key === 'Enter') executeCommand(); });
+            // This is a workaround because the prompt input and execute button are not siblings
+            document.querySelector('.execute-btn, .prompt-area button').addEventListener('click', () => executeCommand());
+            dom.soundToggle.addEventListener('click', () => { audioSystem.init(); audioSystem.isEnabled = !audioSystem.isEnabled; dom.soundToggle.textContent = audioSystem.isEnabled ? '🔊' : '🔇'; });
+            document.getElementById('achievementBtn').addEventListener('click', () => dom.achievementPanel.classList.toggle('show'));
+            dom.fullscreenBtn.addEventListener('click', () => { if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); } });
+            dom.themeButtons.forEach(btn => btn.addEventListener('click', () => setTheme(btn.dataset.theme)));
+
+            init(); // Start the dashboard
+        });
+    </script>
+</body>
+</html>
